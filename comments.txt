@@ -1,0 +1,5 @@
+Level 2 ENCRYPTION
+//Using the mongoose-encryption package - Always use the plugin for the encryption
+//before creating a model
+userSchema.plugin(encrypt, { secret: process.env.ENCRYPTION_KEY, encryptedFields: ['password'] });
+const encrypt = require('mongoose-encryption');

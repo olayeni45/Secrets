@@ -1,8 +1,8 @@
 //jshint esversion:6
-const express = require('express');
 require('dotenv').config();
+const express = require('express');
 const ejs = require('ejs');
-const encrypt = require('mongoose-encryption');
+const md5 = require('md5');
 
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -25,9 +25,7 @@ const userSchema = new mongoose.Schema({
     }
 })
 
-//Using the mongoose-encryption package - Always use the plugin for the encryption
-//before creating a model
-userSchema.plugin(encrypt, { secret: process.env.ENCRYPTION_KEY, encryptedFields: ['password'] });
+
 
 //User Model
 const User = mongoose.model("User", userSchema);
@@ -46,7 +44,9 @@ app.get('/login', (req, res) => {
 
 app.post('/login', (req, res) => {
     const username = req.body.username;
-    const password = req.body.password;
+    const password = md5(req.body.password);
+    //md5 was used here to hash the password so the hashed version of
+    //both passwords would be compared.
 
     User.findOne({ email: username }, (err, user) => {
 
@@ -72,7 +72,7 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
     const newUser = new User({
         email: req.body.username,
-        password: req.body.password
+        password: md5(req.body.password)
     })
 
     newUser.save((err) => {
