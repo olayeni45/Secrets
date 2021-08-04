@@ -2,34 +2,25 @@
 require('dotenv').config();
 const express = require('express');
 const ejs = require('ejs');
-const md5 = require('md5');
-
+const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-
 const app = express();
+
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+const saltRounds = 10;
+
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
 
-
 //User Schema
 const userSchema = new mongoose.Schema({
-    email: {
-        type: String,
-        required: true
-    },
-    password: {
-        type: String,
-        required: true
-    }
+    email: String,
+    password: String
 })
-
-
 
 //User Model
 const User = mongoose.model("User", userSchema);
-
 
 //Routes
 app.get('/', (req, res) => {
@@ -43,10 +34,9 @@ app.get('/login', (req, res) => {
 })
 
 app.post('/login', (req, res) => {
+
     const username = req.body.username;
-    const password = md5(req.body.password);
-    //md5 was used here to hash the password so the hashed version of
-    //both passwords would be compared.
+    const password = req.body.password;
 
     User.findOne({ email: username }, (err, user) => {
 
@@ -55,9 +45,11 @@ app.post('/login', (req, res) => {
         }
         else {
             if (user) {
-                if (user.password === password) {
-                    res.render('secrets')
-                }
+                bcrypt.compare(password, user.password, function (err, result) {
+                    if (result === true) {
+                        res.render('secrets')
+                    }
+                });
             }
         }
     })
@@ -70,19 +62,25 @@ app.get('/register', (req, res) => {
 })
 
 app.post('/register', (req, res) => {
-    const newUser = new User({
-        email: req.body.username,
-        password: md5(req.body.password)
-    })
 
-    newUser.save((err) => {
-        if (err) {
-            console.log(err)
-        }
-        else {
-            res.render('secrets');
-        }
-    })
+    bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
+
+        // Store hash in your password DB.
+        const newUser = new User({
+            email: req.body.username,
+            password: hash
+        })
+
+        newUser.save((err) => {
+            if (err) {
+                console.log(err)
+            }
+            else {
+                res.render('secrets');
+            }
+        })
+    });
+
 })
 
 

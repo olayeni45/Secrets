@@ -3,3 +3,8 @@ Level 2 ENCRYPTION
 //before creating a model
 userSchema.plugin(encrypt, { secret: process.env.ENCRYPTION_KEY, encryptedFields: ['password'] });
 const encrypt = require('mongoose-encryption');
+
+Lesson 3 Md5
+const md5 = require('md5');
+//md5 was used here to hash the password so the hashed version of
+    //both passwords would be compared.
