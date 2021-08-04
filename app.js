@@ -2,6 +2,7 @@
 const express = require('express');
 require('dotenv').config();
 const ejs = require('ejs');
+const encrypt = require('mongoose-encryption');
 
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -23,6 +24,10 @@ const userSchema = new mongoose.Schema({
         required: true
     }
 })
+
+//Using the mongoose-encryption package - Always use the plugin for the encryption
+//before creating a model
+userSchema.plugin(encrypt, { secret: process.env.ENCRYPTION_KEY, encryptedFields: ['password'] });
 
 //User Model
 const User = mongoose.model("User", userSchema);
