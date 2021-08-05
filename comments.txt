@@ -8,3 +8,48 @@ Lesson 3 Md5
 const md5 = require('md5');
 //md5 was used here to hash the password so the hashed version of
     //both passwords would be compared.
+
+
+//Passport to add cookies and sessions
+const saltRounds = 10;
+const bcrypt = require('bcrypt');
+
+//Post login
+const username = req.body.username;
+    const password = req.body.password;
+
+    User.findOne({ email: username }, (err, user) => {
+
+        if (err) {
+            console.log(err);
+        }
+        else {
+            if (user) {
+                bcrypt.compare(password, user.password, function (err, result) {
+                    if (result === true) {
+                        res.render('secrets')
+                    }
+                });
+            }
+        }
+    })
+
+    //Post signup
+    
+    bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
+
+        // Store hash in your password DB.
+        const newUser = new User({
+            email: req.body.username,
+            password: hash
+        })
+
+        newUser.save((err) => {
+            if (err) {
+                console.log(err)
+            }
+            else {
+                res.render('secrets');
+            }
+        })
+    });
