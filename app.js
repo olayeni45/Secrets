@@ -40,7 +40,8 @@ const userSchema = new mongoose.Schema({
     email: String,
     password: String,
     googleId: String,
-    facebookId: String
+    facebookId: String,
+    secret: String
 })
 
 userSchema.plugin(passportLocalMongoose);
@@ -69,7 +70,7 @@ passport.use(new GoogleStrategy({
     callbackURL: "http://localhost:3000/auth/google/secrets"
 },
     function (accessToken, refreshToken, profile, cb) {
-        console.log("Google Profile", profile);
+        // console.log("Google Profile", profile);
         User.findOrCreate({ googleId: profile.id, email: profile.emails[0].value }, function (err, user) {
             return cb(err, user);
         });
@@ -83,7 +84,7 @@ passport.use(new FacebookStrategy({
     callbackURL: "http://localhost:3000/auth/facebook/secrets"
 },
     function (accessToken, refreshToken, profile, cb) {
-        console.log("Facebook profile", profile)
+        // console.log("Facebook profile", profile)
         User.findOrCreate({ facebookId: profile.id, }, function (err, user) {
             return cb(err, user);
         });
@@ -148,12 +149,16 @@ app.get('/logout', (req, res) => {
 
 //Secrets page
 app.get('/secrets', (req, res) => {
-    if (req.isAuthenticated()) {
-        res.render('secrets');
-    }
-    else {
-        res.redirect('/login');
-    }
+    User.find({ "secret": { $ne: null } }, (err, foundUsers) => {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            if (foundUsers) {
+                res.render('secrets', { usersWithSecrets: foundUsers })
+            }
+        }
+    })
 })
 
 //Register route
@@ -177,6 +182,36 @@ app.post('/register', (req, res) => {
 
 })
 
+
+//Submit page
+app.get('/submit', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.render('submit');
+    }
+    else {
+        res.redirect('/login');
+    }
+})
+
+app.post('/submit', (req, res) => {
+    const submittedSecret = req.body.secret;
+
+    console.log("User", req.user);
+    const userId = req.user._id;
+    User.findById(userId, (err, foundUser) => {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            if (foundUser) {
+                foundUser.secret = submittedSecret;
+                foundUser.save(() => {
+                    res.redirect('/secrets');
+                })
+            }
+        }
+    })
+})
 
 const port = process.env.PORT | 3000;
 
