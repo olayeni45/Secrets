@@ -53,3 +53,7 @@ const username = req.body.username;
             }
         })
     });
+
+    // mongoose.connect("mongodb://localhost:27017/secrets", { useNewUrlParser: true, useUnifiedTopology: true })
+    
+    // userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"

@@ -5,19 +5,23 @@ const ejs = require('ejs');
 const mongoose = require('mongoose');
 const app = express();
 
+//Session and Passport Local imports
 const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const passportLocalMongoose = require('passport-local-mongoose');
 
+//Passport Oauth and custom mongoose Imports
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const findOrCreate = require('mongoose-findorcreate');
 
+//Body Parser, public folder and view engine settings
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
 
+//session, initialize Passport and passport session
 app.use(session({
     secret: process.env.SECRET,
     resave: false,
@@ -28,7 +32,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-// mongoose.connect("mongodb://localhost:27017/secrets", { useNewUrlParser: true, useUnifiedTopology: true })
 mongoose.set("useCreateIndex", true)
 
 
@@ -46,6 +49,7 @@ userSchema.plugin(findOrCreate);
 //User Model
 const User = mongoose.model("User", userSchema);
 
+//These configurations for passport must be kept after the User schema and model
 passport.use(new LocalStrategy(User.authenticate()));
 
 passport.serializeUser(function (user, done) {
@@ -63,11 +67,10 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/google/secrets"
-    // userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
 },
     function (accessToken, refreshToken, profile, cb) {
-        console.log(profile);
-        User.findOrCreate({ googleId: profile.id }, function (err, user) {
+        console.log("Google Profile", profile);
+        User.findOrCreate({ googleId: profile.id, email: profile.emails[0].value }, function (err, user) {
             return cb(err, user);
         });
     }
@@ -81,7 +84,7 @@ passport.use(new FacebookStrategy({
 },
     function (accessToken, refreshToken, profile, cb) {
         console.log("Facebook profile", profile)
-        User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+        User.findOrCreate({ facebookId: profile.id, }, function (err, user) {
             return cb(err, user);
         });
     }
@@ -92,7 +95,7 @@ app.get('/', (req, res) => {
     res.render('home');
 })
 
-app.get('/auth/google', passport.authenticate("google", { scope: ["profile"] }));
+app.get('/auth/google', passport.authenticate("google", { scope: ["profile", "email"] }));
 
 app.get('/auth/google/secrets',
     passport.authenticate("google", { failureRedirect: '/login' }),
